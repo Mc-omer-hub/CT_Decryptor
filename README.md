@@ -26,7 +26,8 @@ python ct_decryptor_gui.py
 
 ### 运行单文件 EXE
 
-打开 `CT_Decryptor.exe` 即可运行。
+前往https://github.com/Mc-omer-hub/CT_Decryptor/releases/tag/EXE
+下载并打开 `CT_Decryptor.exe` 即可运行。
 无需 Python 环境即可独立运行。
 
 ## 使用说明

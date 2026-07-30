@@ -1,5 +1,5 @@
-# CT_Decryptor
-ct解密小工具
+# CT Decryptor
+
 对加密的 Cheat Engine `.CT` 文件进行解密、清理和导出的桌面工具。基于 Python + pywebview，支持拖拽操作与实时进度反馈。
 
 ## 功能
@@ -9,13 +9,11 @@ ct解密小工具
 - **导出** — 保存为可直接使用的 `_clean.ct` 文件
 - **拖拽操作** — 支持文件拖放 / 系统对话框选择
 - **进度弹窗** — 解密过程分步展示，动态进度条
-- **平台** — 基于 WebView2 (Windows)
+- **跨平台** — 基于 WebView2 (Windows)，macOS / Linux 也兼容
 
-## 截图
+## 程序页面预览
 
-| 选择文件 | 解密进度 | 完成 |
-|----------|----------|------|
-| ![]()    | ![]()    | ![]() |
+![程序页面预览](408.png)
 
 ## 快速开始
 
@@ -25,6 +23,16 @@ ct解密小工具
 pip install pywebview
 python ct_decryptor_gui.py
 ```
+
+### 构建单文件 EXE
+
+依赖 [Nuitka](https://nuitka.net/) + [MinGW64](https://www.mingw-w64.org/)，确保两者已安装并在 PATH 中。
+
+```bash
+build_nuitka.bat
+```
+
+打包产物：`CT_Decryptor.exe`，无需 Python 环境即可独立运行。
 
 ## 使用说明
 
@@ -40,6 +48,7 @@ python ct_decryptor_gui.py
 CT Decryptor/
 ├── ct_decryptor_gui.py   # 主程序（Python + webview API）
 ├── index.html            # 前端 UI（白色简洁风格）
+├── build_nuitka.bat      # Nuitka 打包脚本
 └── README.md
 ```
 
@@ -48,7 +57,6 @@ CT Decryptor/
 - **[pywebview](https://github.com/r0x0r/pywebview)** — 用系统 WebView 渲染 HTML 桌面界面
 - **[Nuitka](https://nuitka.net/)** — Python 到 C++ 编译，生成独立可执行文件
 - **纯标准库** — 加解密逻辑仅依赖 `zlib` / `re` / `base64`，无第三方依赖
-- **前端html** -前端由AI生成
 
 ## 许可证
 

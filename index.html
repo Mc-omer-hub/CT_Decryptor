@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CT Decryptor</title>
+<style>
+  :root {
+    --bg: #f0f2f5;
+    --card: #ffffff;
+    --card-border: #e8eaed;
+    --text: #1a1a2e;
+    --text-dim: #6b7280;
+    --accent: #4a6cf7;
+    --accent-hover: #3b5de7;
+    --accent-light: #eef1ff;
+    --ok: #10b981;
+    --err: #ef4444;
+    --radius: 10px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:-apple-system,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+    background:var(--bg);color:var(--text);height:100vh;overflow:hidden;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .card{
+    width:580px;max-height:96vh;background:var(--card);
+    border:1px solid var(--card-border);border-radius:14px;
+    padding:28px 30px 22px;
+    display:flex;flex-direction:column;
+    box-shadow:0 4px 24px rgba(0,0,0,.06);
+  }
+
+  /* ── header ── */
+  header{display:flex;align-items:flex-start;justify-content:space-between}
+  header h1{font-size:20px;font-weight:700;letter-spacing:-.3px}
+  header p{font-size:12px;color:var(--text-dim);margin-top:2px}
+  .settings-btn{
+    background:transparent;border:none;color:var(--text-dim);cursor:pointer;
+    width:34px;height:34px;border-radius:8px;display:flex;align-items:center;
+    justify-content:center;transition:.2s;flex-shrink:0;font-size:18px
+  }
+  .settings-btn:hover{background:var(--bg);color:var(--text)}
+
+  /* ── drop zone ── */
+  .drop-zone{
+    margin-top:18px;border:2px dashed #d1d5db;border-radius:var(--radius);
+    padding:30px 20px;text-align:center;cursor:pointer;transition:.25s
+  }
+  .drop-zone:hover,.drop-zone.drag-over{
+    border-color:var(--accent);background:var(--accent-light)
+  }
+  .drop-zone .icon{font-size:34px;line-height:1;margin-bottom:6px}
+  .drop-zone .main{font-size:14px;font-weight:500}
+  .drop-zone .sub{font-size:12px;color:var(--text-dim);margin-top:4px}
+  /* 选中文件后的状态 */
+  .drop-zone.has-file{border-style:solid;border-color:var(--accent);background:var(--accent-light)}
+  .drop-zone.has-file .icon{font-size:22px}
+  .drop-zone.has-file .main{font-size:13px;font-weight:600;color:var(--accent)}
+  .drop-zone.has-file .sub{font-size:11px}
+
+  /* ── buttons ── */
+  .btn-row{display:flex;gap:8px;margin-top:12px}
+  .btn-row button{
+    flex:1;padding:9px 0;border-radius:8px;border:none;cursor:pointer;
+    font-size:13px;font-weight:500;transition:.2s
+  }
+  .btn-secondary{background:var(--bg);color:var(--text)}
+  .btn-secondary:hover{background:#e5e7eb}
+  .btn-accent{background:var(--accent);color:#fff}
+  .btn-accent:hover:not(:disabled){background:var(--accent-hover)}
+  .btn-accent:disabled{opacity:.4;cursor:not-allowed}
+  .btn-export{
+    background:var(--ok);color:#fff
+  }
+  .btn-export:hover:not(:disabled){background:#059669}
+
+  /* ── status ── */
+  .status{
+    margin-top:12px;font-size:13px;padding:8px 12px;border-radius:8px;
+    background:var(--bg);color:var(--text-dim);transition:.3s;
+    min-height:34px;display:flex;align-items:center
+  }
+  .status.ok{color:var(--ok);background:#ecfdf5}
+  .status.err{color:var(--err);background:#fef2f2}
+
+  /* ── log ── */
+  .log-wrap{
+    margin-top:10px;flex:1;min-height:0;
+    background:var(--bg);border-radius:8px;overflow:hidden;
+    border:1px solid var(--card-border)
+  }
+  .log{
+    height:130px;overflow-y:auto;padding:10px 12px;
+    font-family:'Cascadia Code','Consolas','JetBrains Mono',monospace;
+    font-size:12px;line-height:1.6;color:var(--text-dim);white-space:pre-wrap;
+    word-break:break-all
+  }
+  .log::-webkit-scrollbar{width:5px}
+  .log::-webkit-scrollbar-track{background:transparent}
+  .log::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:3px}
+
+  /* ── settings modal ── */
+  .modal-overlay{
+    display:none;position:fixed;inset:0;background:rgba(0,0,0,.25);
+    z-index:999;align-items:center;justify-content:center
+  }
+  .modal-overlay.open{display:flex}
+  .modal{
+    background:var(--card);border:1px solid var(--card-border);border-radius:14px;
+    padding:24px 28px;width:340px;box-shadow:0 8px 32px rgba(0,0,0,.1)
+  }
+  .modal h3{font-size:16px;margin-bottom:16px;font-weight:600}
+  .toggle-row{
+    display:flex;align-items:center;justify-content:space-between;cursor:pointer;
+    font-size:13.5px;padding:10px 0;user-select:none
+  }
+  .toggle-row input{display:none}
+  .toggle-track{
+    position:relative;width:40px;height:22px;background:#d1d5db;border-radius:11px;
+    transition:.25s;flex-shrink:0
+  }
+  .toggle-track::after{
+    content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;
+    background:#fff;border-radius:50%;transition:.25s;box-shadow:0 1px 3px rgba(0,0,0,.15)
+  }
+  .toggle-row input:checked+.toggle-track{background:var(--accent)}
+  .toggle-row input:checked+.toggle-track::after{transform:translateX(18px)}
+  .modal-hint{font-size:12px;color:var(--text-dim);margin:4px 0 14px}
+  .modal-close{
+    width:100%;padding:8px 0;border-radius:8px;border:none;
+    background:var(--bg);color:var(--text-dim);cursor:pointer;font-size:13px;transition:.2s
+  }
+  .modal-close:hover{background:#e5e7eb;color:var(--text)}
+
+  /* ── progress modal ── */
+  .progress-overlay{
+    display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);
+    z-index:1000;align-items:center;justify-content:center;
+    backdrop-filter:blur(4px)
+  }
+  .progress-overlay.open{display:flex}
+  .progress-box{
+    background:var(--card);border-radius:16px;
+    padding:36px 40px 32px;width:420px;text-align:center;
+    box-shadow:0 12px 48px rgba(0,0,0,.15);
+    animation:fadeIn .25s ease-out
+  }
+  @keyframes fadeIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+
+  .progress-box .icon-area{
+    width:64px;height:64px;margin:0 auto 16px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-size:28px
+  }
+  .progress-box .icon-area.running{background:var(--accent-light);color:var(--accent)}
+  .progress-box .icon-area.done{background:#ecfdf5;color:var(--ok)}
+  .progress-box .icon-area.fail{background:#fef2f2;color:var(--err)}
+
+  .progress-box .file-name{font-size:13px;color:var(--text-dim);margin-bottom:4px}
+  .progress-box .step-text{font-size:15px;font-weight:600;margin-bottom:16px}
+  .progress-track{
+    width:100%;height:6px;background:#e5e7eb;border-radius:3px;overflow:hidden;margin-bottom:8px
+  }
+  .progress-fill{
+    height:100%;background:linear-gradient(90deg,var(--accent),#7c9cf7));
+    border-radius:3px;transition:width .35s ease;width:0%
+  }
+  .progress-pct{font-size:12px;color:var(--text-dim)}
+  .progress-info{font-size:12px;color:var(--text-dim);margin-top:14px;line-height:1.6}
+  .progress-box .btn-group{display:flex;gap:8px;margin-top:20px}
+  .progress-box .btn-group button{
+    flex:1;padding:9px 0;border-radius:8px;border:none;cursor:pointer;
+    font-size:13px;font-weight:500;transition:.2s
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <header>
+    <div>
+      <h1>CT Decryptor</h1>
+      <p>解密 · 清理 · 导出</p>
+    </div>
+    <button class="settings-btn" onclick="openSettings()" title="设置">&#9881;</button>
+  </header>
+
+  <!-- 拖拽区 -->
+  <div class="drop-zone" id="dropZone" onclick="browseFile()"
+    ondragover="event.preventDefault();this.classList.add('drag-over')"
+    ondragleave="this.classList.remove('drag-over')"
+    ondrop="handleDrop(event)">
+    <div class="icon">&#128194;</div>
+    <div class="main" id="dzMain">拖放 .CT 文件到此处</div>
+    <div class="sub" id="dzSub">或点击此处选择文件</div>
+  </div>
+
+  <!-- 按钮行 -->
+  <div class="btn-row">
+    <button class="btn-secondary" onclick="browseFile()">选择文件</button>
+    <button class="btn-accent" id="startBtn" disabled onclick="startDecrypt()">开始解密</button>
+    <button class="btn-export" id="exportBtn" disabled onclick="exportFile()">导出文件</button>
+  </div>
+
+  <div class="status" id="status">等待文件导入</div>
+
+  <div class="log-wrap">
+    <div class="log" id="log"></div>
+  </div>
+</div>
+
+<!-- settings modal -->
+<div class="modal-overlay" id="settingsModal" onclick="if(event.target===this)closeSettings()">
+  <div class="modal">
+    <h3>设置</h3>
+    <label class="toggle-row">
+      <span>移除 CT 表单 (Forms 区块)</span>
+      <input type="checkbox" id="cleanFormsCb" checked onchange="toggleCleanForms()">
+      <span class="toggle-track"></span>
+    </label>
+    <div class="modal-hint">关闭后保留原始 CT 界面布局不变</div>
+    <button class="modal-close" onclick="closeSettings()">关闭</button>
+  </div>
+</div>
+
+<!-- progress modal -->
+<div class="progress-overlay" id="progressModal">
+  <div class="progress-box">
+    <div class="icon-area running" id="progIcon">&#9881;</div>
+    <div class="file-name" id="progFile"></div>
+    <div class="step-text" id="progStep">准备中...</div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progFill"></div>
+    </div>
+    <div class="progress-pct" id="progPct">0%</div>
+    <div class="progress-info" id="progInfo"></div>
+    <div class="btn-group" id="progBtns" style="display:none">
+      <button class="btn-secondary" onclick="closeProgress()">关闭</button>
+      <button class="btn-export" id="exportBtn2" onclick="exportFile()">导出文件</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── 状态变量 ── */
+let _fileReady = false;
+
+/* ── DOM helpers ── */
+function log(msg) {
+  const el = document.getElementById('log');
+  el.textContent += msg + '\n';
+  el.scrollTop = el.scrollHeight;
+}
+function setStatus(text, type) {
+  const el = document.getElementById('status');
+  el.textContent = text;
+  el.className = 'status' + (type ? ' ' + type : '');
+}
+
+/* ── 文件选择（仅通知 JS 侧） ── */
+function browseFile() { pywebview.api.open_file(); }
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('dropZone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if(!file) return;
+  const name = file.name;
+  if(!name.toLowerCase().endsWith('.ct') && !name.toLowerCase().endsWith('.cetrainer')){
+    setStatus('请拖放 .ct 或 .cetrainer 文件', 'err');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    pywebview.api.process_data(name, ev.target.result.split(',')[1]);
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ── 开始解密 ── */
+function startDecrypt() {
+  if(!_fileReady) return;
+  openProgress();
+  setProgressRunning();
+  pywebview.api.start_decrypt();
+}
+
+/* ── 导出 ── */
+function exportFile() {
+  pywebview.api.export_file().then(function(r){
+    const res = JSON.parse(r);
+    if(res.ok){
+      const name = res.path.replace(/\\/g,'/').split('/').pop();
+      setStatus('已导出 \u2192 ' + name, 'ok');
+      log('导出完成: ' + res.path);
+    }
+  });
+}
+
+/* ── 设置 ── */
+function openSettings() { document.getElementById('settingsModal').classList.add('open'); }
+function closeSettings() { document.getElementById('settingsModal').classList.remove('open'); }
+function toggleCleanForms() {
+  const on = document.getElementById('cleanFormsCb').checked;
+  pywebview.api.set_clean_forms(on);
+}
+
+/* ── 进度弹窗 ── */
+function openProgress() {
+  document.getElementById('progressModal').classList.add('open');
+}
+function closeProgress() {
+  document.getElementById('progressModal').classList.remove('open');
+}
+function closeProgressAndExport() {
+  closeProgress();
+  exportFile();
+}
+function setProgressRunning() {
+  const icon = document.getElementById('progIcon');
+  icon.className = 'icon-area running';
+  icon.innerHTML = '&#9881;';
+  document.getElementById('progBtns').style.display = 'none';
+}
+function setProgressDone() {
+  const icon = document.getElementById('progIcon');
+  icon.className = 'icon-area done';
+  icon.innerHTML = '&#10003;';
+  document.getElementById('progBtns').style.display = 'flex';
+}
+function setProgressFail() {
+  const icon = document.getElementById('progIcon');
+  icon.className = 'icon-area fail';
+  icon.innerHTML = '&#10007;';
+  document.getElementById('progBtns').style.display = 'flex';
+}
+
+/* ── 回调：Python → JS ── */
+
+/* 文件选中 */
+function onFileSelected(name, size) {
+  const dz = document.getElementById('dropZone');
+  dz.classList.add('has-file');
+  document.getElementById('dzMain').textContent = name;
+  document.getElementById('dzSub').textContent = (size / 1024).toFixed(1) + ' KB';
+  document.getElementById('startBtn').disabled = false;
+  document.getElementById('exportBtn').disabled = true;
+  _fileReady = true;
+  setStatus('已选择: ' + name, 'ok');
+  log('────────────────────────────');
+  log('选中文件: ' + name + '  (' + (size / 1024).toFixed(1) + ' KB)');
+}
+function onFileError(msg) {
+  setStatus('读取失败: ' + msg, 'err');
+  log('错误: ' + msg);
+}
+
+/* 进度更新 */
+function onDecryptProgress(pct, step) {
+  document.getElementById('progFill').style.width = pct + '%';
+  document.getElementById('progPct').textContent = pct + '%';
+  document.getElementById('progStep').textContent = step;
+}
+
+/* 解密完成 */
+function onDecryptComplete(name, before, after) {
+  setProgressDone();
+  document.getElementById('progStep').textContent = '解密完成';
+  document.getElementById('progPct').textContent = '100%';
+  document.getElementById('progFill').style.width = '100%';
+  const diff = before - after;
+  document.getElementById('progInfo').innerHTML =
+    '原始: <b>' + before.toLocaleString() + '</b> 字符<br>' +
+    '清理后: <b>' + after.toLocaleString() + '</b> 字符' +
+    (diff > 0 ? '<br>移除: <b>' + diff.toLocaleString() + '</b> 字符' : '');
+
+  document.getElementById('exportBtn').disabled = false;
+  setStatus(name + ' \u2014 解密完成', 'ok');
+  log('解密完成 \u2022 ' + before.toLocaleString() + ' \u2192 ' + after.toLocaleString() + ' 字符');
+}
+
+/* 解密失败 */
+function onDecryptError(msg) {
+  setProgressFail();
+  document.getElementById('progStep').textContent = '解密失败';
+  document.getElementById('progInfo').textContent = msg;
+  setStatus('失败: ' + msg, 'err');
+  log('错误: ' + msg);
+}
+</script>
+</body>
+</html>

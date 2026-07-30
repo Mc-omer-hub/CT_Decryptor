@@ -44,7 +44,7 @@ python ct_decryptor_gui.py
 CT Decryptor/
 ├── ct_decryptor_gui.py   # 主程序（Python + webview API）
 ├── index.html            # 前端 UI（白色简洁风格）
-├── build_nuitka.bat      # Nuitka 打包脚本
+├── 408.png               # 程序预览图片
 └── README.md
 ```
 

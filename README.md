@@ -24,15 +24,10 @@ pip install pywebview
 python ct_decryptor_gui.py
 ```
 
-### 构建单文件 EXE
+### 运行单文件 EXE
 
-依赖 [Nuitka](https://nuitka.net/) + [MinGW64](https://www.mingw-w64.org/)，确保两者已安装并在 PATH 中。
-
-```bash
-build_nuitka.bat
-```
-
-打包产物：`CT_Decryptor.exe`，无需 Python 环境即可独立运行。
+打开 `CT_Decryptor.exe` 即可运行。
+无需 Python 环境即可独立运行。
 
 ## 使用说明
 
